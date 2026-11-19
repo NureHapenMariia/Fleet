@@ -1,71 +1,163 @@
-<div class="min-h-screen bg-slate-50 p-6">
-  <div class="flex flex-wrap items-center gap-3 mb-6">
-    <h1 class="text-2xl font-bold mr-auto">Fleet</h1>
-    <input class="border rounded-lg px-3 py-2 bg-white" placeholder="Search tasks..."
-      [value]="search()" (input)="search.set($any($event.target).value); load()" />
-    <select class="border rounded-lg px-3 py-2 bg-white"
-      (change)="sprintId.set($any($event.target).value); load()">
-      <option value="">All sprints</option>
-      @for (s of sprints(); track s._id) {
-        <option [value]="s._id">{{ s.Name }}</option>
-      }
-    </select>
-    <button class="bg-slate-900 text-white rounded-lg px-4 py-2" (click)="showForm.set(true)">
-      + New Task
-    </button>
-  </div>
+<div class="flex min-h-screen bg-slate-50">
 
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-    @for (col of columns; track col.key) {
-      <div class="bg-slate-100 rounded-xl p-3">
-        <h2 class="font-semibold mb-3">
-          {{ col.title }}
-          <span class="text-sm text-slate-500 ml-1">{{ byStatus(col.key).length }}</span>
-        </h2>
-        @for (t of byStatus(col.key); track t._id) {
-          <div class="bg-white rounded-lg p-3 mb-3 shadow-sm">
-            <div class="flex justify-between text-xs text-slate-500">
-              <span>{{ t.SprintId?.Name }}</span>
-              <span class="bg-slate-100 rounded px-2">{{ t.StoryPoints }} SP</span>
-            </div>
-            <p class="font-medium my-2">{{ t.Title }}</p>
-            <div class="flex items-center justify-between">
-              <span class="w-7 h-7 rounded-full bg-slate-600 text-white text-xs flex items-center justify-center">
-                {{ initials(t.UserId?.UserName) }}
-              </span>
-              <div class="flex gap-2">
-                <select class="text-xs border rounded px-1" (change)="move(t, $any($event.target).value)">
-                  @for (c of columns; track c.key) {
-                    <option [value]="c.key" [selected]="c.key === t.Status">{{ c.title }}</option>
-                  }
-                </select>
-                <button class="text-xs text-red-600" (click)="remove(t)">Delete</button>
+  <aside class="w-64 bg-slate-900 text-slate-200 p-4">
+    <div class="text-white font-bold text-xl mb-6">Fleet</div>
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs uppercase tracking-wide text-slate-400">Sprints</span>
+      <button class="w-6 h-6 rounded bg-slate-700 hover:bg-slate-600 text-white" (click)="openSprintForm()">+</button>
+    </div>
+    @for (s of sprints(); track s._id) {
+      <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 mb-1"
+        [class.bg-slate-800]="s._id === activeSprintId()" (click)="selectSprint(s._id)">
+        <p class="font-medium">{{ s.Name }}</p>
+        <p class="text-xs text-slate-400">{{ s.Members?.length ?? 0 }} members</p>
+      </button>
+    }
+  </aside>
+
+  <main class="flex-1 p-6">
+    @if (activeSprint(); as s) {
+      <div class="mb-6">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="mr-auto">
+            <h1 class="text-2xl font-bold">{{ s.Name }}</h1>
+            <p class="text-sm text-slate-500">
+              {{ s.Goal }} · {{ s.StartDate | date:'dd.MM.yyyy' }} – {{ s.EndDate | date:'dd.MM.yyyy' }}
+            </p>
+          </div>
+          <input class="border rounded-lg px-3 py-2 bg-white" placeholder="Search tasks..."
+            [value]="search()" (input)="search.set($any($event.target).value); load()" />
+          <button class="bg-slate-900 text-white rounded-lg px-4 py-2" (click)="openTaskForm()">+ New Task</button>
+        </div>
+
+        <div class="flex items-center gap-2 mt-3">
+          @for (m of s.Members; track m._id) {
+            <span class="w-8 h-8 rounded-full bg-slate-600 text-white text-xs flex items-center justify-center"
+              [title]="m.UserName">{{ initials(m.UserName) }}</span>
+          }
+          <button class="border rounded-full px-3 py-1 text-sm bg-white" (click)="openMemberForm()">+ Add member</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        @for (col of columns; track col.key) {
+          <div class="bg-slate-100 rounded-xl p-3">
+            <h2 class="font-semibold mb-3">
+              {{ col.title }}
+              <span class="text-sm text-slate-500 ml-1">{{ byStatus(col.key).length }}</span>
+            </h2>
+            @for (t of byStatus(col.key); track t._id) {
+              <div class="bg-white rounded-lg p-3 mb-3 shadow-sm">
+                <div class="flex justify-end text-xs text-slate-500">
+                  <span class="bg-slate-100 rounded px-2">{{ t.StoryPoints }} SP</span>
+                </div>
+                <p class="font-medium my-2">{{ t.Title }}</p>
+                <div class="flex items-center justify-between">
+                  <span class="w-7 h-7 rounded-full bg-slate-600 text-white text-xs flex items-center justify-center">
+                    {{ initials(t.UserId?.UserName) }}
+                  </span>
+                  <div class="flex gap-2">
+                    <select class="text-xs border rounded px-1" (change)="move(t, $any($event.target).value)">
+                      @for (c of columns; track c.key) {
+                        <option [value]="c.key" [selected]="c.key === t.Status">{{ c.title }}</option>
+                      }
+                    </select>
+                    <button class="text-xs text-red-600" (click)="remove(t)">Delete</button>
+                  </div>
+                </div>
               </div>
-            </div>
+            }
           </div>
         }
       </div>
-    }
-  </div>
 
-  @if (showForm()) {
+      @if (showTaskForm()) {
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div class="bg-white rounded-xl p-6 w-96 space-y-3">
+            <h2 class="font-semibold text-lg">New task in {{ s.Name }}</h2>
+            <input class="w-full border rounded px-3 py-2" placeholder="Title" [(ngModel)]="taskForm.Title" />
+            <textarea class="w-full border rounded px-3 py-2" placeholder="Description" [(ngModel)]="taskForm.Text"></textarea>
+            <select class="w-full border rounded px-3 py-2" [(ngModel)]="taskForm.UserId">
+              <option value="">Assignee</option>
+              @for (m of s.Members; track m._id) {
+                <option [value]="m._id">{{ m.UserName }}</option>
+              }
+            </select>
+            <input type="number" class="w-full border rounded px-3 py-2" [(ngModel)]="taskForm.StoryPoints" />
+            @if (error()) { <p class="text-red-600 text-sm">{{ error() }}</p> }
+            <div class="flex justify-end gap-2">
+              <button class="px-3 py-2" (click)="showTaskForm.set(false)">Cancel</button>
+              <button class="bg-slate-900 text-white rounded px-4 py-2" (click)="createTask()">Create</button>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (showMemberForm()) {
+        <div class="fixed inset-0 bg-black/40 flex items-center justify-center">
+          <div class="bg-white rounded-xl p-6 w-96 space-y-3">
+            <h2 class="font-semibold text-lg">Members of {{ s.Name }}</h2>
+            @for (m of s.Members; track m._id) {
+              <div class="flex items-center justify-between">
+                <span>{{ m.UserName }}</span>
+                <button class="text-xs text-red-600" (click)="removeMember(m._id)">Remove</button>
+              </div>
+            }
+            <div class="flex gap-2 pt-2 border-t">
+              <select class="flex-1 border rounded px-2 py-1" [(ngModel)]="memberToAdd">
+                <option value="">Add existing user...</option>
+                @for (u of availableUsers(); track u._id) {
+                  <option [value]="u._id">{{ u.UserName }}</option>
+                }
+              </select>
+              <button class="border rounded px-3" (click)="addMember(memberToAdd)">Add</button>
+            </div>
+            <div class="space-y-2 pt-2 border-t">
+              <p class="text-sm font-semibold">Or create a new user</p>
+              <input class="w-full border rounded px-3 py-2" placeholder="Username" [(ngModel)]="userForm.UserName" />
+              <input type="password" class="w-full border rounded px-3 py-2" placeholder="Temporary password" [(ngModel)]="userForm.Password" />
+              <button class="border rounded px-4 py-2" (click)="createUserForActiveSprint()">Create and add</button>
+            </div>
+            @if (error()) { <p class="text-red-600 text-sm">{{ error() }}</p> }
+            <div class="flex justify-end">
+              <button class="px-3 py-2" (click)="showMemberForm.set(false)">Close</button>
+            </div>
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="h-full flex flex-col items-center justify-center text-slate-500 pt-32">
+        <p class="text-lg mb-3">Select a sprint or create a new one</p>
+        <button class="bg-slate-900 text-white rounded-lg px-4 py-2" (click)="openSprintForm()">+ New sprint</button>
+      </div>
+    }
+  </main>
+
+  @if (showSprintForm()) {
     <div class="fixed inset-0 bg-black/40 flex items-center justify-center">
-      <div class="bg-white rounded-xl p-6 w-96 space-y-3">
-        <h2 class="font-semibold text-lg">New task</h2>
-        <input class="w-full border rounded px-3 py-2" placeholder="Title" [(ngModel)]="form.Title" />
-        <textarea class="w-full border rounded px-3 py-2" placeholder="Description" [(ngModel)]="form.Text"></textarea>
-        <select class="w-full border rounded px-3 py-2" [(ngModel)]="form.UserId">
-          <option value="">Assignee</option>
-          @for (u of users(); track u._id) { <option [value]="u._id">{{ u.UserName }}</option> }
-        </select>
-        <select class="w-full border rounded px-3 py-2" [(ngModel)]="form.SprintId">
-          <option value="">Sprint</option>
-          @for (s of sprints(); track s._id) { <option [value]="s._id">{{ s.Name }}</option> }
-        </select>
-        <input type="number" class="w-full border rounded px-3 py-2" [(ngModel)]="form.StoryPoints" />
+      <div class="bg-white rounded-xl p-6 w-96 space-y-3 max-h-screen overflow-y-auto">
+        <h2 class="font-semibold text-lg">New sprint</h2>
+        <input class="w-full border rounded px-3 py-2" placeholder="Name" [(ngModel)]="sprintForm.Name" />
+        <input class="w-full border rounded px-3 py-2" placeholder="Goal" [(ngModel)]="sprintForm.Goal" />
+        <input type="date" class="w-full border rounded px-3 py-2" [(ngModel)]="sprintForm.StartDate" />
+        <input type="date" class="w-full border rounded px-3 py-2" [(ngModel)]="sprintForm.EndDate" />
+        <p class="text-sm font-semibold">Members</p>
+        @for (u of users(); track u._id) {
+          <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" [checked]="sprintForm.Members.includes(u._id)" (change)="toggleMember(u._id)" />
+            {{ u.UserName }}
+          </label>
+        }
+        <div class="space-y-2 pt-2 border-t">
+          <p class="text-sm font-semibold">Or create a new user</p>
+          <input class="w-full border rounded px-3 py-2" placeholder="Username" [(ngModel)]="userForm.UserName" />
+          <input type="password" class="w-full border rounded px-3 py-2" placeholder="Temporary password" [(ngModel)]="userForm.Password" />
+          <button class="border rounded px-4 py-2" (click)="createUserForSprintForm()">Create and select</button>
+        </div>
+        @if (error()) { <p class="text-red-600 text-sm">{{ error() }}</p> }
         <div class="flex justify-end gap-2">
-          <button class="px-3 py-2" (click)="showForm.set(false)">Cancel</button>
-          <button class="bg-slate-900 text-white rounded px-4 py-2" (click)="create()">Create</button>
+          <button class="px-3 py-2" (click)="showSprintForm.set(false)">Cancel</button>
+          <button class="bg-slate-900 text-white rounded px-4 py-2" (click)="createSprint()">Create sprint</button>
         </div>
       </div>
     </div>

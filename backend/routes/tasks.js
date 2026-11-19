@@ -1,11 +1,11 @@
 const express = require("express");
 const Task = require("../models/Task");
 require("../models/User");
-require("../models/Sprint");
+Sprint = require("../models/Sprint");
 
 const router = express.Router();
 
-// список + пошук і фільтри: ?q=текст&status=todo&userId=...&sprintId=...
+// список + пошук і фільтри
 router.get("/", async (req, res) => {
   try {
     const { q, status, userId, sprintId } = req.query;
@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
       .populate("SprintId", "Name");
     res.json(tasks);
   } catch (err) {
-    console.error(err);
+    console.error(JSON.stringify(err.errInfo, null, 2));
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -42,6 +42,11 @@ router.get("/stats/per-user", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
+  const sprint = await Sprint.findById(req.body.SprintId);
+  if (!sprint) return res.status(400).json({ message: "Invalid SprintId" });
+  if (!sprint.Members.some((m) => m.equals(req.body.UserId))) {
+    return res.status(400).json({ message: "User is not a member of the sprint" });
+  }
   try {
     const task = await Task.create(req.body);
     res.status(201).json(task);
