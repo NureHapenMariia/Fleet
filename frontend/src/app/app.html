@@ -1,0 +1,73 @@
+<div class="min-h-screen bg-slate-50 p-6">
+  <div class="flex flex-wrap items-center gap-3 mb-6">
+    <h1 class="text-2xl font-bold mr-auto">Fleet</h1>
+    <input class="border rounded-lg px-3 py-2 bg-white" placeholder="Search tasks..."
+      [value]="search()" (input)="search.set($any($event.target).value); load()" />
+    <select class="border rounded-lg px-3 py-2 bg-white"
+      (change)="sprintId.set($any($event.target).value); load()">
+      <option value="">All sprints</option>
+      @for (s of sprints(); track s._id) {
+        <option [value]="s._id">{{ s.Name }}</option>
+      }
+    </select>
+    <button class="bg-slate-900 text-white rounded-lg px-4 py-2" (click)="showForm.set(true)">
+      + New Task
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    @for (col of columns; track col.key) {
+      <div class="bg-slate-100 rounded-xl p-3">
+        <h2 class="font-semibold mb-3">
+          {{ col.title }}
+          <span class="text-sm text-slate-500 ml-1">{{ byStatus(col.key).length }}</span>
+        </h2>
+        @for (t of byStatus(col.key); track t._id) {
+          <div class="bg-white rounded-lg p-3 mb-3 shadow-sm">
+            <div class="flex justify-between text-xs text-slate-500">
+              <span>{{ t.SprintId?.Name }}</span>
+              <span class="bg-slate-100 rounded px-2">{{ t.StoryPoints }} SP</span>
+            </div>
+            <p class="font-medium my-2">{{ t.Title }}</p>
+            <div class="flex items-center justify-between">
+              <span class="w-7 h-7 rounded-full bg-slate-600 text-white text-xs flex items-center justify-center">
+                {{ initials(t.UserId?.UserName) }}
+              </span>
+              <div class="flex gap-2">
+                <select class="text-xs border rounded px-1" (change)="move(t, $any($event.target).value)">
+                  @for (c of columns; track c.key) {
+                    <option [value]="c.key" [selected]="c.key === t.Status">{{ c.title }}</option>
+                  }
+                </select>
+                <button class="text-xs text-red-600" (click)="remove(t)">Delete</button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  @if (showForm()) {
+    <div class="fixed inset-0 bg-black/40 flex items-center justify-center">
+      <div class="bg-white rounded-xl p-6 w-96 space-y-3">
+        <h2 class="font-semibold text-lg">New task</h2>
+        <input class="w-full border rounded px-3 py-2" placeholder="Title" [(ngModel)]="form.Title" />
+        <textarea class="w-full border rounded px-3 py-2" placeholder="Description" [(ngModel)]="form.Text"></textarea>
+        <select class="w-full border rounded px-3 py-2" [(ngModel)]="form.UserId">
+          <option value="">Assignee</option>
+          @for (u of users(); track u._id) { <option [value]="u._id">{{ u.UserName }}</option> }
+        </select>
+        <select class="w-full border rounded px-3 py-2" [(ngModel)]="form.SprintId">
+          <option value="">Sprint</option>
+          @for (s of sprints(); track s._id) { <option [value]="s._id">{{ s.Name }}</option> }
+        </select>
+        <input type="number" class="w-full border rounded px-3 py-2" [(ngModel)]="form.StoryPoints" />
+        <div class="flex justify-end gap-2">
+          <button class="px-3 py-2" (click)="showForm.set(false)">Cancel</button>
+          <button class="bg-slate-900 text-white rounded px-4 py-2" (click)="create()">Create</button>
+        </div>
+      </div>
+    </div>
+  }
+</div>
